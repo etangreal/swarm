@@ -1,86 +1,39 @@
 
-	./chaos-monkey ring
-
 // ------------------------------------------------------------------------------------------------
-// NODEJS
+// SETUP
 // ------------------------------------------------------------------------------------------------
 
-	askubuntu.com/questions/49390/how-do-i-install-the-latest-version-of-node-js
+# REQUIREMENTS
 
-		sudo apt-get install software-properties-common python-software-properties -y
-		sudo add-apt-repository ppa:chris-lea/node.js -y
-		sudo apt-get update -y
-		sudo apt-get install nodejs -y
-		sudo apt-get install npm -y
+  - vagrant (>= 1.5)
+  - virtualbox
 
-	nurmrony.wordpress.com/2015/04/06/installing-latest-nodejs-v0-12-2-on-ubuntu-14-0414-10
+# SETUP
 
-		curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
-		sudo apt-get install -y nodejs
-		sudo apt-get install -y npm
-	
+  - git clone 
+  - vagrant up
+  - vagrant ssh
+  
+  - cd /vagrant/src
 
-// ------------------------------------------------------------------------------------------------
-// TEST
-// ------------------------------------------------------------------------------------------------
+# USAGE
 
-	ping 172.17.0.1
-	sudo iptables -L -v
+  - ./chaos-monkey
+  	(lists the available options)
+  - ./chaos-monkey start
+  - ./chaos-monkey ring
+  - ./chaos-monkey names
+   (list the containers along with their ip-addresses)
 
-	sudo iptables -A DOCKER -s 172.17.0.1 -j DROP
-	sudo iptables -D DOCKER -s 172.17.0.1 -j DROP
+# TESTING
 
-	sudo iptables -L -v
-	ping 172.17.0.1
-
-	cat /etc/hosts
-	echo '172.17.0.1 test' | sudo tee --append /etc/hosts
-	_______________________________________________________________________________________________
-
-	sudo iptables -L -v
-	sudo iptables -F FORWARD
-	sudo iptables -P FORWARD DROP
-	sudo iptables -A FORWARD -s 172.17.0.23 -d 172.17.0.24 -j ACCEPT
-	sudo iptables -L -v
-
-	sudo iptables -L -v
-	sudo iptables -F DOCKER
-	sudo iptables -A DOCKER -s 172.17.0.1 -d 172.17.0.2 -j ACCEPT
-	sudo iptables -A DOCKER -s 172.17.0.2 -d 172.17.0.1 -j ACCEPT
-	sudo iptables -A DOCKER -s 172.17.0.0/16 -d 172.17.0.0/16 -j DROP
-	sudo iptables -L -v
-
-	sudo iptables -A DOCKER -t filter -m iprange --src-range 172.17.0.1-172.17.0.100 -j REJECT
-
-// ------------------------------------------------------------------------------------------------
-// QUESTIONS
-// ------------------------------------------------------------------------------------------------
-
-	Saving IPTables Rules
-		centos.org/docs/5/html/5.1/Deployment_Guide/s1-iptables-saving.html
-
-		sudo iptables-save > <filename>
-		sudo iptables-save > iptables-save.txt
-
-// ------------------------------------------------------------------------------------------------
-// DOCKER
-// ------------------------------------------------------------------------------------------------
-
-	docker run -i -t --rm --name c1 -h c1 ubuntu /bin/bash -l
-	docker run -i -t --rm --name c2 -h c2 ubuntu /bin/bash -l
-
-	brctl show
-	ip addr show eth0
-	ip route
-
-	sudo iptables -L -t nat -n
-	sudo iptables -L -v
-
-// ------------------------------------------------------------------------------------------------
-// VAGRANT
-// ------------------------------------------------------------------------------------------------
-
-	sudo apt-get install bridge-utils
+  - docker attach aa
+  (attach to a container)
+  - ctrl-c
+  (break out listening/mirroring mode)
+  - ifconfig
+  - ping 172.17.0.2
+  (replace the ip-address according to your instance's assigned ips)
 
 // ------------------------------------------------------------------------------------------------
 // END

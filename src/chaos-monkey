@@ -270,11 +270,15 @@ switch(args[0]) {
 		break;
 
 	default:
-		console.log('\tchaos-monkey setup A B C 	- will start three docker containers (a.k.a "nodes") named "aa", "bb" and "bb"')
-		console.log('\tchaos-monkey fast 	 	- will configure all containers so that they can talk to each other')
-		console.log('\tchaos-monkey netsplit 	 	- will configure containers so that they are split into two groups: a majority and a minority')
-		console.log('\tchaos-monkey bridge 	 	- same as Netsplit, but one node can see both groups')
-		console.log('\tchaos-monkey ring 	 	- each container can only see two other containers')
+		console.log('\t./chaos-monkey names 	- will will give a list of the names of running docker cointainers')
+		console.log('\t./chaos-monkey start 	- will start a default set of docker containers named "aa", "bb", "cc", "dd"')
+		console.log('\t./chaos-monkey start a1 b2 c3 d4 - will start a set of docker containers named "a1", "b2", "c3", "d1"')
+		console.log('\t./chaos-monkey stop 		- will kill all currently running docker containers and remove the images\n')
+
+		console.log('\t./chaos-monkey fast 	 	- will configure all containers so that they can talk to each other')
+		console.log('\t./chaos-monkey netsplit 	 	- will configure containers so that they are split into two groups: a majority and a minority')
+		console.log('\t./chaos-monkey bridge 	 	- same as Netsplit, but one node can see both groups')
+		console.log('\t./chaos-monkey ring 	 	- each container can only see two other containers')
 		break;
 }
 
