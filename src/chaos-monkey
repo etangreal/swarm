@@ -1,0 +1,283 @@
+#!/usr/bin/env nodejs
+
+// ------------------------------------------------------------------------------------------------
+// IMPORTS
+// ------------------------------------------------------------------------------------------------
+
+var execSync = require('child_process').execSync;
+
+// ------------------------------------------------------------------------------------------------
+// DECLARATIONS
+// ------------------------------------------------------------------------------------------------
+
+var args = process.argv.slice(2);
+
+// ------------------------------------------------------------------------------------------------
+// FUNCTIONS
+// ------------------------------------------------------------------------------------------------
+
+var shell = function(cmd) {
+	var code = execSync(cmd, { encoding: 'utf8' });
+	// console.log(code);
+	return code;
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var killall = function() {
+	shell('docker stop $(docker ps -a -q)');
+	shell('docker rm -f $(docker ps -a -q)');
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var docker_ps = function() {
+	console.log( shell('docker ps -a') );
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var compareIPs = function(a,b) {
+	var as = a.ip.split('.');
+	var bs = b.ip.split('.');
+
+	if ( parseInt(as[0]) < parseInt(bs[0]) ) return -1;
+	if ( parseInt(as[0]) > parseInt(bs[0]) ) return 1;
+
+	if ( parseInt(as[1]) < parseInt(bs[1]) ) return -1;
+	if ( parseInt(as[1]) > parseInt(bs[1]) ) return 1;
+
+	if ( parseInt(as[2]) < parseInt(bs[2]) ) return -1;
+	if ( parseInt(as[2]) > parseInt(bs[2]) ) return 1;
+
+	if ( parseInt(as[3]) < parseInt(bs[3]) ) return -1;
+	if ( parseInt(as[3]) > parseInt(bs[3]) ) return 1;
+
+	return 0;
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var docker_ps_get_names = function() {
+
+	names = []
+	var code = shell('docker ps -a')
+	var lines = code.split('\n')
+	// console.log(lines)
+
+	var table = []
+	for(var i=1; i<lines.length-1; i++) {
+		var row = {
+			id: lines[i].slice(0, 20).trim(),
+			image: lines[i].slice(20, 40).trim(),
+			command: lines[i].slice(40, 60).trim(),
+			created: lines[i].slice(60, 80).trim(),
+			status: lines[i].slice(80, 100).trim(),
+			port: lines[i].slice(100, 120).trim(),
+			name: lines[i].slice(120, 140).trim()
+		}
+
+		table.push(row);
+		names.push(row.name);
+	}
+
+	// console.log(table)
+	// console.log(lines)
+
+	return names;
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var lookup = function(names) {
+	names = names || [];
+	var containers = [];
+
+	for(var i=0; i<names.length; i++) {
+		var name = names[i];
+
+		ip = shell('docker inspect --format "{{ .NetworkSettings.IPAddress }}" ' + name);
+		ip = ip.replace('\n','')
+
+		containers[i] = {
+			name: name,
+			ip: ip
+		}
+	}
+
+	// console.log(containers);
+	return containers;
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var start = function(names) {
+	for(var i=0; i<names.length; i++) {
+		var name = names[i];
+		shell('docker run -d -i -t --name '+name+' -h '+name+' ubuntu /bin/bash -l')
+	}
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var config_fast = function() {
+	// configure all containers so that they can talk to each other
+	shell('sudo iptables -F DOCKER')
+	console.log( shell('sudo iptables -L -v') )
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var config_netsplit = function(list) {
+	// configure containers so that they are split into two groups: a majority and a minority
+	shell('sudo iptables -F DOCKER')
+
+	var len = list.length;
+	var div = Math.floor(len/2);
+
+	if (len < 3) {
+		console.log('config_netsplit: too few containers to netsplit on...');
+		return;
+	}
+
+	var first 	= list[0].ip;
+	var mid   	= list[div].ip;
+	var second 	= list[div+1].ip;
+	var last 	= list[len-1].ip;
+
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+first+'-'+mid+' -m iprange --dst-range '+first+'-'+mid+' -j ACCEPT')
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+second+'-'+last+' -m iprange --dst-range '+second+'-'+last+' -j ACCEPT')
+	shell('sudo iptables -A DOCKER -s 172.17.0.0/16 -d 172.17.0.0/16 -j DROP')
+	console.log( shell('sudo iptables -L -v') )
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var config_bridge = function(list) {
+	// same as netsplit, but one node can see both groups
+	shell('sudo iptables -F DOCKER')
+
+	var len = list.length;
+	var div = Math.floor(len/2);
+
+	if (len < 3) {
+		console.log('config_netsplit: too few containers to netsplit on...');
+		return;
+	}
+
+	var first 	= list[0].ip;
+	var mid   	= list[div].ip;
+	var second 	= list[div+1].ip;
+	var last 	= list[len-1].ip;
+
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+first+'-'+mid+' -m iprange --dst-range '+first+'-'+mid+' -j ACCEPT')
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+second+'-'+last+' -m iprange --dst-range '+second+'-'+last+' -j ACCEPT')
+
+	shell('sudo iptables -A DOCKER -s '+mid+' -m iprange --dst-range '+first+'-'+last+' -j ACCEPT')
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+first+'-'+last+' -d '+mid+' -j ACCEPT')
+
+	shell('sudo iptables -A DOCKER -s 172.17.0.0/16 -d 172.17.0.0/16 -j DROP')
+	console.log( shell('sudo iptables -L -v') )
+}
+
+// ------------------------------------------------------------------------------------------------
+
+var config_ring = function(list) {
+	// each container can only see two other containers
+	shell('sudo iptables -F DOCKER')
+
+	for(var i=0; i<list.length-1; i++) {
+		var curr = list[i].ip
+		var next = list[i+1].ip
+
+		shell('sudo iptables -A DOCKER -s '+curr+' -d '+next+' -j ACCEPT')
+		shell('sudo iptables -A DOCKER -s '+next+' -d '+curr+' -j ACCEPT')
+	}
+
+	if (list.length > 1) {
+		var first = list[0].ip;
+		var last = list[list.length-1].ip;
+
+		shell('sudo iptables -A DOCKER -s '+first+' -d '+last+' -j ACCEPT')
+		shell('sudo iptables -A DOCKER -s '+last+' -d '+first+' -j ACCEPT')
+	}
+
+	shell('sudo iptables -A DOCKER -s 172.17.0.0/16 -d 172.17.0.0/16 -j DROP')
+	console.log( shell('sudo iptables -L -v') )
+}
+
+// ------------------------------------------------------------------------------------------------
+// MAIN: Parse Arguments
+// ------------------------------------------------------------------------------------------------
+
+var default_names = ["aa","bb","cc","dd"];
+
+switch(args[0]) {
+	case 'names':
+		console.log( docker_ps_get_names() )
+		break;
+
+	case 'start':
+		console.log('Start default docker containers\n')
+		var names = docker_ps_get_names()
+		if ( names.length > 1 ) {
+			console.log('There are already containers running...')
+			console.log( lookup(names) )
+			docker_ps()
+			break;
+		}
+
+		start(default_names)
+		docker_ps()
+		break;
+
+	case 'stop':
+		console.log('Stopped all docker containers\n')
+		killall()
+		docker_ps()
+		break;
+
+	case 'fast':
+		console.log('All containers can talk to all others\n')
+		config_fast()
+		break;
+
+	case 'netsplit':
+		console.log('The containers are split into two groups: a majority and a minority\n')
+		var names = docker_ps_get_names()
+		var containers = lookup(names)
+			containers.sort(compareIPs);
+
+		config_netsplit(containers);
+		break;
+
+	case 'bridge':
+		console.log('Same as Netsplit, but one node can see both groups\n')
+		var names = docker_ps_get_names()
+		var containers = lookup(names)
+			containers.sort(compareIPs);
+
+		config_bridge(containers);
+		break;
+
+	case 'ring':
+		console.log('Each container can only see two other containers\n')
+		var names = docker_ps_get_names()
+		var containers = lookup(names)
+			containers.sort(compareIPs);
+
+		config_ring(containers)
+		break;
+
+	default:
+		console.log('\tchaos-monkey setup A B C 	- will start three docker containers (a.k.a "nodes") named "aa", "bb" and "bb"')
+		console.log('\tchaos-monkey fast 	 	- will configure all containers so that they can talk to each other')
+		console.log('\tchaos-monkey netsplit 	 	- will configure containers so that they are split into two groups: a majority and a minority')
+		console.log('\tchaos-monkey bridge 	 	- same as Netsplit, but one node can see both groups')
+		console.log('\tchaos-monkey ring 	 	- each container can only see two other containers')
+		break;
+}
+
+// ------------------------------------------------------------------------------------------------
+// END
+// ------------------------------------------------------------------------------------------------

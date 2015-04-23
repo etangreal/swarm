@@ -1,0 +1,288 @@
+
+// ------------------------------------------------------------------------------------------------
+// NODE.JS
+// ------------------------------------------------------------------------------------------------
+
+	digitalocean.com/community/tutorials/how-to-install-node-js-on-an-ubuntu-14-04-server
+
+		sudo apt-get install nodejs -y
+		sudo apt-get install npm -y
+	_______________________________________________________________________________________________
+
+	Tiny NodeJS Docker Container
+		github.com/jprjr/docker-tinynode
+	_______________________________________________________________________________________________
+
+	Command Line Utilities with Node.js
+
+		shapeshed.com/command-line-utilities-with-nodejs
+			github.com/tj/commander.js
+			github.com/substack/node-optimist
+			github.com/bcoe/yargs
+			github.com/chriso/cli
+	_______________________________________________________________________________________________
+
+	Executing shell commands Synchronously
+		stackoverflow.com/questions/25320047/synchronous-child-process-calls-for-shell-scripting-including-cli-in-node-js-0
+	_______________________________________________________________________________________________
+
+	docker-cmd
+		npmjs.com/package/docker-cmd
+	_______________________________________________________________________________________________
+
+	Docker Remote API Client Libraries
+		docs.docker.com/reference/api/remote_api_client_libraries
+
+			github.com/apocas/dockerode
+			github.com/appersonlabs/docker.io
+	_______________________________________________________________________________________________
+
+	cnpmjs.org/browse/keyword/dock
+
+// ------------------------------------------------------------------------------------------------
+// PYTHON
+// ------------------------------------------------------------------------------------------------
+
+	dockerpsjson.py | Shell script thats prints the output of `docker ps` in JSON format.
+		gist.github.com/mminer/a08566f13ef687c17b39
+
+// ------------------------------------------------------------------------------------------------
+// GO
+// ------------------------------------------------------------------------------------------------
+
+	github.com/golang/go/wiki/Ubuntu
+		sudo apt-get install golang
+
+	How to handle configuration in Go
+		stackoverflow.com/questions/16465705/how-to-handle-configuration-in-go
+
+// ------------------------------------------------------------------------------------------------
+// VAGRANT
+// ------------------------------------------------------------------------------------------------
+
+	github.com/fgrehm/vagrant-cachier
+	fgrehm.viewdocs.io/vagrant-cachier
+
+		vagrant plugin install vagrant-cachier
+	_______________________________________________________________________________________________
+
+	[SEARCH]: NFS windows vagrant
+
+		Vagrant WinNFSd
+			github.com/GM-Alex/vagrant-winnfsd
+
+		NFS for Vagrant on Windows
+			jankowfsky.com/blog/2013/11/28/nfs-for-vagrant-under-windows
+				bitbucket.org/jankowfsky/winnfsd
+				bitbucket.org/jankowfsky/winnfsd/downloads
+
+		NFS Shared Folders
+			friendsofvagrant.github.io/v1/docs/nfs.html
+
+		Vagrant - NFS shared folders for Mac/Linux hosts, Samba shares for Windows
+			midwesternmac.com/blogs/jeff-geerling/vagrant-nfs-shared-folders
+
+		Vagrant and NFS on Windows 7
+			blog.ulr-ich.ch/post/61309716573/vagrant-and-nfs-on-windows-7
+				supermarket.chef.io/cookbooks/nfs
+
+		rsync in Vagrant 1.5 improves file performance and Windows usage
+			servercheck.in/blog/rsync-vagrant-15-file-performance-windows-dev
+
+				- cygwin.com
+				- msysgit.github.io
+				- mingw.org
+
+			vagrantup.com/blog/feature-preview-vagrant-1-5-rsync.html
+				mitchellh.com/comparing-filesystem-performance-in-virtual-machines
+				github.com/mitchellh/vagrant/blob/master/website/docs/source/v2/synced-folders/rsync.html.md
+
+// ------------------------------------------------------------------------------------------------
+// DOCKER
+// ------------------------------------------------------------------------------------------------
+
+	[SEARCH]: smallest docker containers
+		___________________________________________________________________________________________
+
+		Create The Smallest Possible Docker Container
+			blog.xebia.com/2014/07/04/create-the-smallest-possible-docker-container
+			github.com/adriaandejonge/hellobuild
+		___________________________________________________________________________________________
+
+		Building Docker Images for Static Go Binaries
+			medium.com/@kelseyhightower/optimizing-docker-images-for-static-binaries-b5696e26eb07
+		___________________________________________________________________________________________
+
+		Building good docker images
+			jonathan.bergknoff.com/journal/building-good-docker-images
+			news.ycombinator.com/item?id=8483102
+		___________________________________________________________________________________________
+
+		A small buildroot-based image for Docker, with NodeJS installed. Clocks in around 30MB.
+			github.com/jprjr/docker-tinynode
+		___________________________________________________________________________________________
+
+		Dockerizing a Node.js Web App
+			docs.docker.com/examples/nodejs_web_app
+		___________________________________________________________________________________________
+
+		Linking Containers Together
+			docs.docker.com/userguide/dockerlinks
+				docs.docker.com/userguide/usingdocker
+				docs.docker.com/articles/ambassador_pattern_linking
+	___________________________________________________________________________________________
+	
+	Native Docker Networking Implementation
+		digitalocean.com/community/tutorials/the-docker-ecosystem-networking-and-communication
+	_______________________________________________________________________________________________
+
+	Using Docker Machine to run your Docker Containers in Rackspace
+		developer.rackspace.com/blog/using-docker-machine-to-deploy-your-docker-containers-on-rackspace
+	_______________________________________________________________________________________________
+
+	Docker Networking 101
+		dasblinkenlichten.com/docker-networking-101
+
+// ------------------------------------------------------------------------------------------------
+// IPTABLES
+// ------------------------------------------------------------------------------------------------
+
+	The Beginner’s Guide to iptables, the Linux Firewall
+		howtogeek.com/177621/the-beginners-guide-to-iptables-the-linux-firewall
+
+	_______________________________________________________________________________________________
+
+	Docker.com | Network Configuration
+		docs.docker.com/articles/networking
+		docs.docker.com/articles/networking/#between-containers
+		docs.docker.com/userguide/dockerlinks
+
+	_______________________________________________________________________________________________
+
+	Helping Docker get along with iptables
+		blog.andyet.com/2014/09/11/docker-host-iptables-forwarding
+
+	_______________________________________________________________________________________________
+
+	A Docker primer – from zero to a running Django app
+		ochronus.com/docker-primer-django/#.UjIWHqym14z
+	_______________________________________________________________________________________________
+
+	Docker intercontainer networking explained
+		blog.sequenceiq.com/blog/2014/08/12/docker-networking
+			github.com/sequenceiq/sequenceiq-samples
+			virtualbox.org/manual/ch06.html#network_nat
+			github.com/weaveworks/weave
+			github.com/jpetazzo/pipework
+	_______________________________________________________________________________________________
+
+	docker-fw | is a complementary tool for Docker to easily manage iptables-based custom firewall 
+				rules between/towards containers, persistence and two-ways links.
+
+		github.com/gdm85/docker-fw
+			github.com/fsouza/go-dockerclient
+
+	_______________________________________________________________________________________________
+	[GOOD]
+
+	Giving Docker/LXC containers a routable IP address
+		blog.codeaholics.org/2013/giving-dockerlxc-containers-a-routable-ip-address
+
+		ipset.netfilter.org/iptables.man.html
+		netfilter.org/documentation/HOWTO/NAT-HOWTO-6.html
+	_______________________________________________________________________________________________
+
+	Docker networking Tutorial 101
+		slideshare.net/lorispack/docker-networking-101
+
+			iptables -L -t nat -n
+			sudo brctl show
+			docker inspect --format='{{.NetworkSettings}}' gnix1
+
+			docker run -P -d -i --name=nginx2 -t nginx
+			docker run -p host_IP:host_PORT:container_PORT -d -i -t nginx
+
+			docker inspect nginx2
+
+			docker exec c3 ifconfig eth0
+			
+			sudo iptables -L -n
+	_______________________________________________________________________________________________
+	[GOOD]
+
+	Docker Networking
+		jedelman.com/home/docker-networking
+
+			sudo apt-get install traceroute
+			traceroute 198.6.1.4
+
+			sudo iptables -t nat -L -n
+			sudo iptables -L -n
+
+			sudo iptables -I DOCKER -i ext_if -d 172.17.0.2 -j DROP
+			sudo iptables -D DOCKER -i c1 -d 172.17.0.2 -j DROP
+	_______________________________________________________________________________________________
+
+	Linux Firewall Tutorial: IPTables Tables, Chains, Rules Fundamentals
+		thegeekstuff.com/2011/01/iptables-fundamentals
+
+			iptables -> Tables -> Chains -> Rules
+	_______________________________________________________________________________________________
+
+	understanding iptables fundamentals
+		computernetworkingnotes.com/manage-system-security/understanding-iptables-fundamentals.html
+	_______________________________________________________________________________________________
+	[GOOD]
+
+	Centos: HowTos Network IPTables
+		wiki.centos.org/HowTos/Network/IPTables
+	_______________________________________________________________________________________________
+	[GOOD]
+
+	Linux: 20 Iptables Examples For New SysAdmins
+		cyberciti.biz/tips/linux-iptables-examples.html
+	_______________________________________________________________________________________________
+	
+	Collection of basic Linux Firewall iptables rules
+		linuxconfig.org/collection-of-basic-linux-firewall-iptables-rules
+	_______________________________________________________________________________________________
+
+	Control Network traffic with iptables
+		linode.com/docs/security/firewalls/control-network-traffic-with-iptables
+			linuxhomenetworking.com/wiki/index.php/Quick_HOWTO_:_Ch14_:_Linux_Firewalls_Using_iptables#.VThwgbpVtZg
+	_______________________________________________________________________________________________
+
+		cyberciti.biz/tips/linux-iptables-how-to-specify-a-range-of-ip-addresses-or-ports.html
+
+// ------------------------------------------------------------------------------------------------
+// ARTICLES
+// ------------------------------------------------------------------------------------------------
+
+	howtogeek.com/177621/the-beginners-guide-to-iptables-the-linux-firewall
+
+	Sometimes Kill -9 Isn’t Enough
+		bravenewgeek.com/tag/chaos-monkey
+
+	github.com/tylertreat/Comcast
+
+	NetworkConnectionBridge
+		help.ubuntu.com/community/NetworkConnectionBridge
+
+// ------------------------------------------------------------------------------------------------
+// QUESTIONS
+// ------------------------------------------------------------------------------------------------
+
+	
+	
+		stackoverflow.com/questions/10197405/iptables-remove-specific-rules
+
+// ------------------------------------------------------------------------------------------------
+// SUNDRY
+// ------------------------------------------------------------------------------------------------
+
+	destroyallsoftware.com/screencasts/catalog
+	destroyallsoftware.com/talks/the-birth-and-death-of-javascript
+
+// ------------------------------------------------------------------------------------------------
+// END
+// ------------------------------------------------------------------------------------------------

@@ -1,0 +1,47 @@
+
+Hi Ernst, attached is the task :)
+
+As your task we want you to build:
+ - a chaos monkey[0]
+ - for docker containers[1], 
+ - your tool should "terminate" network connections between containers.
+
+To be more specific the following shall be implemented:
+ - Invocable via the command line, e.g. $ chaos-monkey netsplit
+ - The output should show how the network was split
+ - The tool should fetch the running docker containers from the current host
+
+The following modes should be supported:
+ - Fast: all containers can talk to all others
+ - Netsplit: the containers are split into two groups: a majority and a minority
+ - Bridge: Same as Netsplit, but one node can see both groups
+ - Ring: Each container can only see two other containers
+
+You can achieve "container A cannot talk to container B" via iptables
+
+Assumptions:
+	- Any Linux OS is fine
+	- Your tool runs as root, so you can modify the iptable rules
+	- Only the communication between containers on the same host is of interest
+
+Testing:
+	You can test the netsplit by just starting three containers and let them ping each other. 
+	When invoking the netsplit, 1 container should no longer "see" the others.
+	Obviously more sophisticated tests are needed for the other modes.
+
+Background:
+	[0] github.com/Netflix/SimianArmy/wiki/Chaos-Monkey
+	[1] The idea was heavily influenced by Aphyr's Jepsen: a clojure tool to test netsplits 
+		see: 
+			- aphyr.com/tags/jepsen 
+			- github.com/aphyr/jepsen
+
+In general:
+	Presentation
+	- Who are you (5 minutes), so the rest of the team gets to know you
+	- Recap the task (max 5 minutes)
+	- Present your solution, your approach, technologies and Code etc. (around 20 minutes)
+	- At this point the presentation normally transforms into an open discussion with you.
+
+Please read this task and come back to me.
+Anna
