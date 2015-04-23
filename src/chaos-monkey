@@ -121,17 +121,22 @@ var start = function(names) {
 // ------------------------------------------------------------------------------------------------
 
 var config_fast = function() {
-	// configure all containers so that they can talk to each other
+	console.log('\n Fast: All containers can talk to all others\n')
 	shell('sudo iptables -F DOCKER')
-	console.log( shell('sudo iptables -L -v') )
+
+	console.log('\n-------------------------------------------------------------------------------------')
+	console.log(shell('sudo iptables -L -v') )
+	console.log('-------------------------------------------------------------------------------------\n')
 }
 
 // ------------------------------------------------------------------------------------------------
 
 var config_netsplit = function(list) {
-	// configure containers so that they are split into two groups: a majority and a minority
-	shell('sudo iptables -F DOCKER')
+	console.log('\nNetsplit: Configured containers are split into two groups: a majority and a minority\n')
 
+	list.sort(compareIPs);
+
+	var out = []
 	var len = list.length;
 	var div = Math.floor(len/2);
 
@@ -140,23 +145,48 @@ var config_netsplit = function(list) {
 		return;
 	}
 
-	var first 	= list[0].ip;
-	var mid   	= list[div].ip;
-	var second 	= list[div+1].ip;
-	var last 	= list[len-1].ip;
+	var first 	= list[0];
+	var mid   	= list[div];
+	var second 	= list[div+1];
+	var last 	= list[len-1];
 
-	shell('sudo iptables -A DOCKER -m iprange --src-range '+first+'-'+mid+' -m iprange --dst-range '+first+'-'+mid+' -j ACCEPT')
-	shell('sudo iptables -A DOCKER -m iprange --src-range '+second+'-'+last+' -m iprange --dst-range '+second+'-'+last+' -j ACCEPT')
+	// --------------------------------------------------------------------------------------------
+
+	for(var i=0; i<=div; i++) {
+		out.push( list[i].name + ' ( ' + list[i].ip + ' )' )
+	}
+	out.push( 'Connected range: ( ' + first.ip + ' <=> ' + mid.ip + ' )\n' )
+
+	for(var i=div+1; i<len; i++) {
+		out.push( list[i].name + ' ( ' + list[i].ip + ' )' )
+	}
+	out.push( 'Connected range: ( ' + second.ip + ' <=> ' + last.ip + ' )\n' )
+
+	out.forEach(function(line) { 
+		console.log('\t' + line)
+	})
+
+	// --------------------------------------------------------------------------------------------
+
+	shell('sudo iptables -F DOCKER')
+
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+first.ip+'-'+mid.ip+' -m iprange --dst-range '+first.ip+'-'+mid.ip+' -j ACCEPT')
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+second.ip+'-'+last.ip+' -m iprange --dst-range '+second.ip+'-'+last.ip+' -j ACCEPT')
 	shell('sudo iptables -A DOCKER -s 172.17.0.0/16 -d 172.17.0.0/16 -j DROP')
-	console.log( shell('sudo iptables -L -v') )
+
+	console.log('\n-------------------------------------------------------------------------------------')
+	console.log(shell('sudo iptables -L -v') )
+	console.log('-------------------------------------------------------------------------------------\n')
 }
 
 // ------------------------------------------------------------------------------------------------
 
 var config_bridge = function(list) {
-	// same as netsplit, but one node can see both groups
-	shell('sudo iptables -F DOCKER')
+	console.log('\nBridge: Configure containers so that they are split into two groups (a majority and a minority), but one node can see both groups\n')
 
+	list.sort(compareIPs);
+
+	var out = []
 	var len = list.length;
 	var div = Math.floor(len/2);
 
@@ -165,46 +195,98 @@ var config_bridge = function(list) {
 		return;
 	}
 
-	var first 	= list[0].ip;
-	var mid   	= list[div].ip;
-	var second 	= list[div+1].ip;
-	var last 	= list[len-1].ip;
+	var first 	= list[0];
+	var mid   	= list[div];
+	var second 	= list[div+1];
+	var last 	= list[len-1];
 
-	shell('sudo iptables -A DOCKER -m iprange --src-range '+first+'-'+mid+' -m iprange --dst-range '+first+'-'+mid+' -j ACCEPT')
-	shell('sudo iptables -A DOCKER -m iprange --src-range '+second+'-'+last+' -m iprange --dst-range '+second+'-'+last+' -j ACCEPT')
+	// --------------------------------------------------------------------------------------------
 
-	shell('sudo iptables -A DOCKER -s '+mid+' -m iprange --dst-range '+first+'-'+last+' -j ACCEPT')
-	shell('sudo iptables -A DOCKER -m iprange --src-range '+first+'-'+last+' -d '+mid+' -j ACCEPT')
+	for(var i=0; i<=div; i++) {
+		out.push( list[i].name + ' ( ' + list[i].ip + ' )' )
+	}
+	out.push( 'Connected range: ( ' + first.ip + ' <=> ' + mid.ip + ' )\n' )
+
+	out.push( mid.name + ' ( ' + mid.ip + ' => ' + first.ip + ' - ' + last.ip + ' )' )
+	out.push( mid.name + ' ( ' + first.ip + ' - ' + last.ip + ' => ' + mid.ip + ' )\n' )
+
+	for(var i=div+1; i<len; i++) {
+		out.push( list[i].name + ' ( ' + list[i].ip + ' )' )
+	}
+	out.push( 'Connected range: ( ' + second.ip + ' <=> ' + last.ip + ' )\n' )
+
+	out.forEach(function(line) { 
+		console.log('\t' + line)
+	})
+
+	// --------------------------------------------------------------------------------------------
+
+	shell('sudo iptables -F DOCKER')
+
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+first.ip+'-'+mid.ip+' -m iprange --dst-range '+first.ip+'-'+mid.ip+' -j ACCEPT')
+	shell('sudo iptables -A DOCKER -s '+mid.ip+' -m iprange --dst-range '+first.ip+'-'+last.ip+' -j ACCEPT')
+	
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+second.ip+'-'+last.ip+' -m iprange --dst-range '+second.ip+'-'+last.ip+' -j ACCEPT')
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+first.ip+'-'+last.ip+' -d '+mid.ip+' -j ACCEPT')
 
 	shell('sudo iptables -A DOCKER -s 172.17.0.0/16 -d 172.17.0.0/16 -j DROP')
-	console.log( shell('sudo iptables -L -v') )
+
+	console.log('\n-------------------------------------------------------------------------------------')
+	console.log(shell('sudo iptables -L -v') )
+	console.log('-------------------------------------------------------------------------------------\n')
 }
 
 // ------------------------------------------------------------------------------------------------
 
 var config_ring = function(list) {
-	// each container can only see two other containers
-	shell('sudo iptables -F DOCKER')
+	console.log('\nRing: Each container can only see two other containers\n')
+	
+	list.sort(compareIPs);
+
+	var out = []
+	var cmds = []
 
 	for(var i=0; i<list.length-1; i++) {
-		var curr = list[i].ip
-		var next = list[i+1].ip
+		var curr = list[i]
+		var next = list[i+1]
 
-		shell('sudo iptables -A DOCKER -s '+curr+' -d '+next+' -j ACCEPT')
-		shell('sudo iptables -A DOCKER -s '+next+' -d '+curr+' -j ACCEPT')
+		out.push( curr.name + ' => ' + next.name + ' ( ' + curr.ip + ' => ' + next.ip + ' )' )
+		out.push( next.name + ' => ' + curr.name + ' ( ' + next.ip + ' => ' + next.ip + ' )' )
+
+		cmds.push('sudo iptables -A DOCKER -s '+curr.ip+' -d '+next.ip+' -j ACCEPT')
+		cmds.push('sudo iptables -A DOCKER -s '+next.ip+' -d '+curr.ip+' -j ACCEPT')
 	}
 
 	if (list.length > 1) {
-		var first = list[0].ip;
-		var last = list[list.length-1].ip;
+		var first = list[0];
+		var last = list[list.length-1];
 
-		shell('sudo iptables -A DOCKER -s '+first+' -d '+last+' -j ACCEPT')
-		shell('sudo iptables -A DOCKER -s '+last+' -d '+first+' -j ACCEPT')
+		out.push( first.name + ' => ' + last.name + ' ( ' + first.ip + ' => ' + last.ip + ' )' )
+		out.push( last.name + ' => ' + first.name + ' ( ' + last.ip + ' => ' + first.ip + ' )' )
+
+		cmds.push('sudo iptables -A DOCKER -s '+first.ip+' -d '+last.ip+' -j ACCEPT')
+		cmds.push('sudo iptables -A DOCKER -s '+last.ip+' -d '+first.ip+' -j ACCEPT')
 	}
 
+	// --------------------------------------------------------------------------------------------
+
+	out.forEach(function(line) { 
+		console.log('\t' + line)
+	})
+
+	shell('sudo iptables -F DOCKER')
+
+	cmds.forEach(function(cmd) { 
+		shell(cmd) 
+	})
+
 	shell('sudo iptables -A DOCKER -s 172.17.0.0/16 -d 172.17.0.0/16 -j DROP')
-	console.log( shell('sudo iptables -L -v') )
-}
+
+	console.log('\n-------------------------------------------------------------------------------------')
+	console.log(shell('sudo iptables -L -v') )
+	console.log('-------------------------------------------------------------------------------------\n')
+
+}//config_ring
 
 // ------------------------------------------------------------------------------------------------
 // MAIN: Parse Arguments
@@ -232,40 +314,30 @@ switch(args[0]) {
 		break;
 
 	case 'stop':
-		console.log('Stopped all docker containers\n')
+		console.log('\nStopped all docker containers\n')
 		killall()
 		docker_ps()
 		break;
 
 	case 'fast':
-		console.log('All containers can talk to all others\n')
 		config_fast()
 		break;
 
 	case 'netsplit':
-		console.log('The containers are split into two groups: a majority and a minority\n')
 		var names = docker_ps_get_names()
 		var containers = lookup(names)
-			containers.sort(compareIPs);
-
 		config_netsplit(containers);
 		break;
 
 	case 'bridge':
-		console.log('Same as Netsplit, but one node can see both groups\n')
 		var names = docker_ps_get_names()
 		var containers = lookup(names)
-			containers.sort(compareIPs);
-
 		config_bridge(containers);
 		break;
 
 	case 'ring':
-		console.log('Each container can only see two other containers\n')
 		var names = docker_ps_get_names()
 		var containers = lookup(names)
-			containers.sort(compareIPs);
-
 		config_ring(containers)
 		break;
 
