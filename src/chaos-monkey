@@ -111,6 +111,23 @@ var lookup = function(names) {
 
 // ------------------------------------------------------------------------------------------------
 
+var display_names = function() {
+	console.log('List of containers currently running\n')
+
+	var names = docker_ps_get_names()
+	var containers = lookup(names)
+
+	containers.forEach(function(item) {
+		console.log(' Name: ' + item.name + ' | ip: ' + item.ip)
+	})
+	
+	console.log('\n-------------------------------------------------------------------------------------')
+	docker_ps()
+	console.log('-------------------------------------------------------------------------------------\n')
+}
+
+// ------------------------------------------------------------------------------------------------
+
 var start = function(names) {
 	for(var i=0; i<names.length; i++) {
 		var name = names[i];
@@ -310,7 +327,7 @@ var default_names = ["aa","bb","cc","dd"];
 
 switch(args[0]) {
 	case 'names':
-		console.log( docker_ps_get_names() )
+		display_names()
 		break;
 
 	case 'start':
