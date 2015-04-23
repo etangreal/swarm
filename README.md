@@ -5,7 +5,8 @@
 
 # SETUP
 
-  - git clone 
+  - git clone https://github.com/etangreal/swarm.git
+  - cd swarm
   - vagrant up
   - vagrant ssh
   - cd /vagrant/src
