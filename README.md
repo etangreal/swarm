@@ -8,7 +8,6 @@
   - git clone 
   - vagrant up
   - vagrant ssh
-  
   - cd /vagrant/src
 
 # USAGE
