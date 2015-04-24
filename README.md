@@ -24,4 +24,5 @@
 # TO VIEWING DOCKER CONTAINER OUTPUT
   - open an additional console
   - vagrant ssh
-  - docker attach aa (attach to a container)
+  - docker ps
+  - docker attach aa (attach to one of the container e.g: 'aa', 'bb', 'cc', 'dd')
