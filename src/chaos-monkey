@@ -5,12 +5,56 @@
 // ------------------------------------------------------------------------------------------------
 
 var execSync = require('child_process').execSync;
+const net 	 = require('net');
+// var fs 		 = require('fs');
 
 // ------------------------------------------------------------------------------------------------
 // DECLARATIONS
 // ------------------------------------------------------------------------------------------------
 
 var args = process.argv.slice(2);
+var port = 1337;
+
+// ------------------------------------------------------------------------------------------------
+// SOCKET-TO-CLIENT
+// ------------------------------------------------------------------------------------------------
+
+var connect = function(ip, ips, callback) {
+	var socket = new net.Socket()
+
+	// Let's handle the data we get from the server
+	socket.on('data', function (data) {
+		data = JSON.parse(data)
+		socket.end()
+		callback(data)
+	})
+
+	socket.on('error', function(err){
+		console.log('ERROR: Could not connect to: ' + ip)
+	})
+
+	socket.connect(port, ip, function () {
+		console.log("Connected to server: " + ip)
+		socket.write(JSON.stringify(ips))
+	})
+
+}//connect
+
+// ------------------------------------------------------------------------------------------------
+
+var checkPings = function(list) {
+	// item = list[0]
+	list.forEach(function(item) {
+		connect(item.ip, item.ips_pingable, function(data) {
+			console.log('ip: ' + item.ip + ' | passed: ' + data.passed)
+			for(var i=0; i<item.ips_pingable.length; i++) {
+				ip = item.ips_pingable[i]
+				value = data.values[i]
+				console.log('  pinged: '+ip+ ' : ' + value)
+			}//item.ip_pingable
+		})//connect
+	})//list
+}//checkPings
 
 // ------------------------------------------------------------------------------------------------
 // FUNCTIONS
@@ -20,6 +64,10 @@ var shell = function(cmd) {
 	var code = execSync(cmd, { encoding: 'utf8' });
 	// console.log(code);
 	return code;
+}
+
+var writeFile = function(name, content) {
+
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -58,14 +106,33 @@ var compareIPs = function(a,b) {
 
 // ------------------------------------------------------------------------------------------------
 
-var docker_ps_get_names = function() {
+var getIPsInRange = function(list, from, to) {
+	var ips = []
 
-	names = []
+	list.forEach(function(item) {
+		isIn = (compareIPs(item, from) > -1 && compareIPs(item, to) < 1)
+		
+		if (isIn) 
+			ips.push(item.ip)
+
+		// console.log('item.ip: ' + item.ip + ' | from.ip: ' + from.ip + ' | to.ip: ' + to.ip + ' isIn: ' + isIn)
+	})
+
+	// console.log('getIPsInRange:' + ips)
+
+	return ips
+}//getIPsInRange
+
+// ------------------------------------------------------------------------------------------------
+
+var docker_ps_get_ids = function() {
+
+	ids = []
 	var code = shell('docker ps -a')
 	var lines = code.split('\n')
 	// console.log(lines)
 
-	var table = []
+	// var table = []
 	for(var i=1; i<lines.length-1; i++) {
 		var row = {
 			id: lines[i].slice(0, 20).trim(),
@@ -77,29 +144,30 @@ var docker_ps_get_names = function() {
 			name: lines[i].slice(120, 140).trim()
 		}
 
-		table.push(row);
-		names.push(row.name);
+		// table.push(row);
+		ids.push(row.id);
 	}
 
 	// console.log(table)
-	// console.log(lines)
 
-	return names;
+	return ids;
 }
 
 // ------------------------------------------------------------------------------------------------
 
-var lookup = function(names) {
-	names = names || [];
+var lookup = function(ids) {
+	ids = ids || [];
 	var containers = [];
 
-	for(var i=0; i<names.length; i++) {
-		var name = names[i];
+	for(var i=0; i<ids.length; i++) {
+		ip = shell('docker inspect --format "{{ .NetworkSettings.IPAddress }}" ' + ids[i]);
+		name = shell('docker inspect --format "{{ .Name }}" ' + ids[i]);
 
-		ip = shell('docker inspect --format "{{ .NetworkSettings.IPAddress }}" ' + name);
 		ip = ip.replace('\n','')
+		name = name.slice(1).replace('\n','')
 
 		containers[i] = {
+			id: ids[i],
 			name: name,
 			ip: ip
 		}
@@ -114,13 +182,13 @@ var lookup = function(names) {
 var display_names = function() {
 	console.log('List of containers currently running\n')
 
-	var names = docker_ps_get_names()
-	var containers = lookup(names)
+	var ids = docker_ps_get_ids()
+	var containers = lookup(ids)
 
 	containers.forEach(function(item) {
-		console.log(' Name: ' + item.name + ' | ip: ' + item.ip)
+		console.log('id: ' + item.id + ' |  Name: ' + item.name + ' | ip: ' + item.ip)
 	})
-	
+
 	console.log('\n-------------------------------------------------------------------------------------')
 	docker_ps()
 	console.log('-------------------------------------------------------------------------------------\n')
@@ -131,9 +199,11 @@ var display_names = function() {
 var start = function(names) {
 	for(var i=0; i<names.length; i++) {
 		var name = names[i];
-		shell('docker run -d -i -t --name '+name+' -h '+name+' ubuntu /bin/bash -l')
+		shell('docker run -d -i -t --name '+name+' -h '+name+' -v /vagrant/src:/src etangreal/pinger nodejs /src/monitor.js')
 	}
 }
+
+// ------------------------------------------------------------------------------------------------
 
 var instructions = function() {
 	console.log('\n Instructions\n')
@@ -151,14 +221,35 @@ var instructions = function() {
 
 // ------------------------------------------------------------------------------------------------
 
-var config_fast = function() {
+var config_fast = function(list) {
 	console.log('\n Fast: All containers can talk to all others\n')
-	shell('sudo iptables -F DOCKER')
 
+	list.sort(compareIPs);
+
+	var ips_pingable = []
+	list.forEach(function(item) {
+		ips_pingable.push(item.ip)
+	})
+
+	// --------------------------------------------------------------------------------------------
+
+	for(var i=0; i<list.length; i++) {
+		console.log('\t' + list[i].name + ' ( ' + list[i].ip + ' => * )' )
+		list[i].ips_pingable = ips_pingable
+	}
+
+	// --------------------------------------------------------------------------------------------
+
+	shell('sudo iptables -F DOCKER')
 	console.log('\n-------------------------------------------------------------------------------------')
 	console.log(shell('sudo iptables -L -v') )
 	console.log('-------------------------------------------------------------------------------------\n')
-}
+
+	// --------------------------------------------------------------------------------------------
+
+	checkPings(list)
+
+}//config_fast
 
 // ------------------------------------------------------------------------------------------------
 
@@ -181,15 +272,20 @@ var config_netsplit = function(list) {
 	var second 	= list[div+1];
 	var last 	= list[len-1];
 
+	var before  = getIPsInRange(list, first, mid)
+	var after   = getIPsInRange(list, second, last)
+
 	// --------------------------------------------------------------------------------------------
 
 	for(var i=0; i<=div; i++) {
 		out.push( list[i].name + ' ( ' + list[i].ip + ' )' )
+		list[i].ips_pingable = before
 	}
 	out.push( 'Connected range: ( ' + first.ip + ' <=> ' + mid.ip + ' )\n' )
 
 	for(var i=div+1; i<len; i++) {
 		out.push( list[i].name + ' ( ' + list[i].ip + ' )' )
+		list[i].ips_pingable = after
 	}
 	out.push( 'Connected range: ( ' + second.ip + ' <=> ' + last.ip + ' )\n' )
 
@@ -208,7 +304,12 @@ var config_netsplit = function(list) {
 	console.log('\n-------------------------------------------------------------------------------------')
 	console.log(shell('sudo iptables -L -v') )
 	console.log('-------------------------------------------------------------------------------------\n')
-}
+
+	// --------------------------------------------------------------------------------------------
+
+	checkPings(list)	
+
+}//config_netsplit
 
 // ------------------------------------------------------------------------------------------------
 
@@ -231,18 +332,26 @@ var config_bridge = function(list) {
 	var second 	= list[div+1];
 	var last 	= list[len-1];
 
+	var before  = getIPsInRange(list, first, mid)
+	var after   = getIPsInRange(list, second, last)
+	var all 	= getIPsInRange(list, first, last)
+
 	// --------------------------------------------------------------------------------------------
 
-	for(var i=0; i<=div; i++) {
+	for(var i=0; i<div; i++) {
 		out.push( list[i].name + ' ( ' + list[i].ip + ' )' )
+		list[i].ips_pingable = before
 	}
 	out.push( 'Connected range: ( ' + first.ip + ' <=> ' + mid.ip + ' )\n' )
 
 	out.push( mid.name + ' ( ' + mid.ip + ' => ' + first.ip + ' - ' + last.ip + ' )' )
 	out.push( mid.name + ' ( ' + first.ip + ' - ' + last.ip + ' => ' + mid.ip + ' )\n' )
 
+	list[div].ips_pingable = all
+
 	for(var i=div+1; i<len; i++) {
 		out.push( list[i].name + ' ( ' + list[i].ip + ' )' )
+		list[i].ips_pingable = after
 	}
 	out.push( 'Connected range: ( ' + second.ip + ' <=> ' + last.ip + ' )\n' )
 
@@ -255,31 +364,49 @@ var config_bridge = function(list) {
 	shell('sudo iptables -F DOCKER')
 
 	shell('sudo iptables -A DOCKER -m iprange --src-range '+first.ip+'-'+mid.ip+' -m iprange --dst-range '+first.ip+'-'+mid.ip+' -j ACCEPT')
+
 	shell('sudo iptables -A DOCKER -s '+mid.ip+' -m iprange --dst-range '+first.ip+'-'+last.ip+' -j ACCEPT')
-	
-	shell('sudo iptables -A DOCKER -m iprange --src-range '+second.ip+'-'+last.ip+' -m iprange --dst-range '+second.ip+'-'+last.ip+' -j ACCEPT')
 	shell('sudo iptables -A DOCKER -m iprange --src-range '+first.ip+'-'+last.ip+' -d '+mid.ip+' -j ACCEPT')
+
+	shell('sudo iptables -A DOCKER -m iprange --src-range '+second.ip+'-'+last.ip+' -m iprange --dst-range '+second.ip+'-'+last.ip+' -j ACCEPT')
 
 	shell('sudo iptables -A DOCKER -s 172.17.0.0/16 -d 172.17.0.0/16 -j DROP')
 
 	console.log('\n-------------------------------------------------------------------------------------')
 	console.log(shell('sudo iptables -L -v') )
 	console.log('-------------------------------------------------------------------------------------\n')
-}
+
+	// --------------------------------------------------------------------------------------------
+
+	checkPings(list)
+
+}//config_bridge
 
 // ------------------------------------------------------------------------------------------------
 
 var config_ring = function(list) {
 	console.log('\nRing: Each container can only see two other containers\n')
-	
+
 	list.sort(compareIPs);
 
 	var out = []
 	var cmds = []
 
+	// --------------------------------------------------------------------------------------------
+
 	for(var i=0; i<list.length-1; i++) {
 		var curr = list[i]
 		var next = list[i+1]
+
+		if(!curr.ips_pingable)
+			curr.ips_pingable = []
+
+		curr.ips_pingable.push(next.ip)
+
+		if(!next.ips_pingable)
+			next.ips_pingable = []
+
+		next.ips_pingable.push(curr.ip)
 
 		out.push( curr.name + ' => ' + next.name + ' ( ' + curr.ip + ' => ' + next.ip + ' )' )
 		out.push( next.name + ' => ' + curr.name + ' ( ' + next.ip + ' => ' + next.ip + ' )' )
@@ -292,12 +419,20 @@ var config_ring = function(list) {
 		var first = list[0];
 		var last = list[list.length-1];
 
+		first.ips_pingable.push(last.ip)
+		last.ips_pingable.push(first.ip)
+
+		// console.log('LOOK: ' + list[2].ip)
+		// first.ips_pingable.push(list[2].ip)
+
 		out.push( first.name + ' => ' + last.name + ' ( ' + first.ip + ' => ' + last.ip + ' )' )
 		out.push( last.name + ' => ' + first.name + ' ( ' + last.ip + ' => ' + first.ip + ' )' )
 
 		cmds.push('sudo iptables -A DOCKER -s '+first.ip+' -d '+last.ip+' -j ACCEPT')
 		cmds.push('sudo iptables -A DOCKER -s '+last.ip+' -d '+first.ip+' -j ACCEPT')
-	}
+	
+	} else if (list.length == 1)
+		list[0].ips_pingable = []
 
 	// --------------------------------------------------------------------------------------------
 
@@ -317,6 +452,10 @@ var config_ring = function(list) {
 	console.log(shell('sudo iptables -L -v') )
 	console.log('-------------------------------------------------------------------------------------\n')
 
+	// --------------------------------------------------------------------------------------------
+
+	checkPings(list)
+
 }//config_ring
 
 // ------------------------------------------------------------------------------------------------
@@ -332,7 +471,7 @@ switch(args[0]) {
 
 	case 'start':
 		console.log('Start default docker containers\n')
-		var names = docker_ps_get_names()
+		var names = docker_ps_get_ids()
 		if ( names.length > 1 ) {
 			console.log('There are already containers running...')
 			console.log( lookup(names) )
@@ -351,24 +490,26 @@ switch(args[0]) {
 		break;
 
 	case 'fast':
-		config_fast()
+		var ids = docker_ps_get_ids()
+		var containers = lookup(ids)
+		config_fast(containers)
 		break;
 
 	case 'netsplit':
-		var names = docker_ps_get_names()
-		var containers = lookup(names)
+		var ids = docker_ps_get_ids()
+		var containers = lookup(ids)
 		config_netsplit(containers);
 		break;
 
 	case 'bridge':
-		var names = docker_ps_get_names()
-		var containers = lookup(names)
+		var ids = docker_ps_get_ids()
+		var containers = lookup(ids)
 		config_bridge(containers);
 		break;
 
 	case 'ring':
-		var names = docker_ps_get_names()
-		var containers = lookup(names)
+		var ids = docker_ps_get_ids()
+		var containers = lookup(ids)
 		config_ring(containers)
 		break;
 

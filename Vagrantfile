@@ -133,8 +133,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   if Dir.glob("#{File.dirname(__FILE__)}/.vagrant/machines/default/*/id").empty?
     config.vm.provision :shell, :path => "build/docker.sh"
-    config.vm.provision :shell, :path => "build/docker-pull.sh"
+    config.vm.provision :shell, :path => "build/docker-build.sh"
     config.vm.provision :shell, :path => "build/nodejs.sh"
+    config.vm.provision :shell, :path => "build/apt-get-sundry.sh"
     # config.vm.provision :shell, :inline => $script
   end
 

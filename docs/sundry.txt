@@ -1,5 +1,13 @@
 
 // ------------------------------------------------------------------------------------------------
+// BASH
+// ------------------------------------------------------------------------------------------------
+
+	chmod u+x ping.sh
+
+	techrapid.co.uk/linux/install-fping-ping-alternative-linux
+
+// ------------------------------------------------------------------------------------------------
 // NODEJS
 // ------------------------------------------------------------------------------------------------
 
@@ -16,8 +24,21 @@
 		curl -sL https://deb.nodesource.com/setup_0.12 | sudo bash -
 		sudo apt-get install -y nodejs
 		sudo apt-get install -y npm
-	
 
+		npm install express
+		npm install body-parser
+		npm install nodemon
+
+	NodeJS Sockets
+		[N.B] stackoverflow.com/questions/14113254/node-js-server-to-server-connection
+		nodejs.org/api/net.html
+
+	REST
+		stackoverflow.com/questions/5643321/how-to-make-remote-rest-call-inside-node-js-any-curl
+		rapiddg.com/blog/calling-rest-api-nodejs-script
+		isolasoftware.it/2012/05/28/call-rest-api-with-node-js
+		blog.mashape.com/30-ways-to-make-rest-calls-in-node-js-php-python
+	
 // ------------------------------------------------------------------------------------------------
 // TEST
 // ------------------------------------------------------------------------------------------------
